@@ -43,7 +43,7 @@ export async function listenForMessages(client: Client, dogfoodingGroup: Group) 
         await dogfoodingGroup.send(welcomeMessage);
 
         await conversation.send(
-          `I've added you to the Dogfooding group. Check your requets to find it!`
+          `I've added you to the Dogfooding group. Check your requests to find it!`
         );
 
         log(`Added ${senderInboxId} to Dogfooding group`);
