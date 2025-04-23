@@ -2,7 +2,7 @@ import { Client, IdentifierKind, type Group } from "@xmtp/node-sdk";
 import { log, isSameString } from "./helpers/utils.js";
 
 const GROUP_NAME = "TBA Dogfooding";
-const DOGFOODING_ADMIN_ADDRESS = "0xD303Dc539F34A012090100Cf6D62F3adD2c2334b";
+const DOGFOODING_ADMIN_ADDRESS = "0x80245b9C0d2Ef322F2554922cA86Cf211a24047F";
 
 export async function findOrCreateDogfoodingGroup(client: Client): Promise<Group> {
   const group = await findDogfoodingGroup(client);
@@ -15,7 +15,7 @@ export async function findOrCreateDogfoodingGroup(client: Client): Promise<Group
 
   const newGroup = await client.conversations.newGroup([], {
     groupName: GROUP_NAME,
-    groupDescription: `Internal group of TBA dogfooders`,
+    groupDescription: `The ${GROUP_NAME} community group`,
   });
 
   await addAdminToGroup(newGroup);
@@ -74,6 +74,6 @@ const addAdminToGroup = async (group: Group) => {
     );
   }
 
-  log(`[SUCCESS] ${GROUP_NAME} group created successfully`);
+  log(`[SUCCESS] ${GROUP_NAME} group configuration complete`);
   return group;
 };

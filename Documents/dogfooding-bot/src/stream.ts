@@ -39,11 +39,11 @@ export async function listenForMessages(client: Client, dogfoodingGroup: Group) 
         log(`Adding new member ${senderInboxId} to Dogfooding group...`);
         await dogfoodingGroup.addMembers([senderInboxId]);
 
-        const welcomeMessage = `Welcome to the Dogfooding group! You've been added because you messaged our agent.`;
+        const welcomeMessage = `Welcome to the TBA Dogfooding group! Leave any feedback you have here, upvote other feedback, and find people to follow.`;
         await dogfoodingGroup.send(welcomeMessage);
 
         await conversation.send(
-          `I've added you to the Dogfooding group. Check your conversations to find it!`
+          `I've added you to the Dogfooding group. Check your requets to find it!`
         );
 
         log(`Added ${senderInboxId} to Dogfooding group`);
