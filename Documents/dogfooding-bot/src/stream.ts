@@ -1,88 +1,90 @@
+
 import { Client, DecodedMessage, type Group } from "@xmtp/node-sdk";
 import { isSameString, log } from "./helpers/utils.js";
-import { createLinearTicket } from "./linear.js";
 
-interface ListenerConfig {
-  adminAddress: string;
-  linearApiKey: string;
-  linearTeamId: string;
-  linearCommand: string;
-}
-
-export async function listenForMessages(
-  client: Client,
-  dogfoodingGroup: Group,
-  config: ListenerConfig
-) {
+export async function listenForMessages(client: Client, dogfoodingGroup: Group) {
   const stream = await client.conversations.streamAllMessages();
 
   for await (const message of stream) {
     log(`[DEBUG] Message received from: ${message?.senderInboxId}`);
     log(`[DEBUG] Client inbox ID: ${client.inboxId}`);
     log(`[DEBUG] Message content type: ${message?.contentType?.typeId}`);
-    log(`[DEBUG] Conversation ID: ${message?.conversationId}`);
-    log(`[DEBUG] Group ID: ${dogfoodingGroup.id}`);
 
-    if (
-      isSameString(message?.conversationId, dogfoodingGroup.id) &&
-      message?.contentType?.typeId === "text" &&
-      (message as any).content?.startsWith(config.linearCommand) &&
-      (message as any).reference
-    ) {
-      log(`[INFO] Potential Linear command message received from ${(message as any).senderAddress}: ID ${message.id}`);
-      log(`[INFO] Detected Linear command reply.`);
-      try {
-        const referencedMessageId = (message as any).reference;
-        log(`[DEBUG] Fetching referenced message ID: ${referencedMessageId}`);
-
-        const replyOptions: SendOptions = { reference: message.id };
-
-        const originalMessages = await dogfoodingGroup.messages({
-            limit: 10,
-         }); 
-
-        const originalMessage = originalMessages.find(m => m.id === referencedMessageId);
-
-        if (!originalMessage || originalMessage.contentType?.typeId !== 'text') {
-          log(`[WARNING] Could not find or decode referenced text message ${referencedMessageId}.`);
-          await dogfoodingGroup.send(`Sorry, I couldn't find the original message to create a ticket from.`, replyOptions);
-          continue;
-        }
-
-        const feedbackContent = originalMessage.content;
-        const feedbackSender = (originalMessage as any).senderAddress ?? 'unknown';
-        log(`[INFO] Found original feedback: "${feedbackContent}" from ${feedbackSender}`);
-
-        const commandParts = (message as any).content.split(config.linearCommand);
-        const customTitle = commandParts[1]?.trim();
-        const ticketTitle = customTitle || `Feedback from ${feedbackSender}`;
-
-        const result = await createLinearTicket({
-          apiKey: config.linearApiKey,
-          teamId: config.linearTeamId,
-          title: ticketTitle,
-          description: feedbackContent as string,
-          feedbackSenderAddress: feedbackSender,
-        });
-
-        if (result.success && result.url) {
-          await dogfoodingGroup.send(`✅ Linear ticket created: ${result.url}`, replyOptions);
-        } else {
-          await dogfoodingGroup.send(`❌ Failed to create Linear ticket: ${result.error || 'Unknown error'}`, replyOptions);
-        }
-      } catch (cmdError: unknown) {
-         const errorMessage = cmdError instanceof Error ? cmdError.message : String(cmdError);
-         log(`[ERROR] Error processing Linear command: ${errorMessage}`);
-         try {
-            const errorReplyOptions: SendOptions = { reference: message.id };
-            await dogfoodingGroup.send(`❌ Error processing command: ${errorMessage}`, errorReplyOptions);
-         } catch (replyError) {
-            log(`[ERROR] Failed to send error reply for command processing.`);
-         }
-      }
+    if (shouldSkip(message, client, dogfoodingGroup)) {
+      log(
+        `[DEBUG] Skipping message from self or non-text content or dogfooding group ${message?.conversationId}`
+      );
       continue;
     }
 
-    if (shouldSkipDM(message, client)) {
-      log(
-        `
+    try {
+      const senderInboxId = message?.senderInboxId ?? "";
+
+      // Get the conversation to reply to the sender
+      const conversation = await client.conversations.getConversationById(
+        message?.conversationId ?? ""
+      );
+
+      if (!conversation) {
+        log(`[ERROR] Could not find the conversation for the message`);
+        continue;
+      }
+
+      // Check if sender is already in the group
+      const members = await dogfoodingGroup.members();
+      const isMember = members.some((member: { inboxId: string }) =>
+        isSameString(member.inboxId, senderInboxId)
+      );
+
+      if (!isMember) {
+        log(`Adding new member ${senderInboxId} to Dogfooding group...`);
+        await dogfoodingGroup.addMembers([senderInboxId]);
+
+        const welcomeMessage = `Welcome to the TBA Dogfooding group! Leave any feedback you have here, upvote other feedback, and find people to follow.`;
+        await dogfoodingGroup.send(welcomeMessage);
+
+        await conversation.send(
+          `I've added you to the Dogfooding group. Check your requests to find it!`
+        );
+
+        log(`Added ${senderInboxId} to Dogfooding group`);
+      } else {
+        log(`User ${senderInboxId} is already a member of the group`);
+        await conversation.send(`You're already a member of the Dogfooding group!`);
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      log(`Error processing message: ${errorMessage}`);
+
+      try {
+        const conversation = await client.conversations.getConversationById(
+          message?.conversationId ?? ""
+        );
+        if (conversation) {
+          await conversation.send(
+            "Sorry, I encountered an error processing your message."
+          );
+        }
+      } catch (sendError) {
+        log(
+          `Failed to send error message: ${
+            sendError instanceof Error ? sendError.message : String(sendError)
+          }`
+        );
+      }
+    }
+  }
+}
+
+function shouldSkip(
+  message: DecodedMessage<any> | undefined,
+  client: Client,
+  dogfoodingGroup: Group
+) {
+  return (
+    isSameString(message?.senderInboxId, client.inboxId) ||
+    message?.contentType?.typeId !== "text" ||
+    isSameString(message?.conversationId, dogfoodingGroup.id)
+  );
+}
