@@ -49,16 +49,4 @@ async function main() {
   log("Syncing conversations...");
   await client.conversations.sync();
 
-  log("Listening for messages...");
-  await listenForMessages(client, group, {
-    adminAddress: DOGFOODING_ADMIN_ADDRESS,
-    linearApiKey: LINEAR_API_KEY,
-    linearTeamId: LINEAR_TEAM_ID,
-    linearCommand: LINEAR_COMMAND_TRIGGER ?? "/linear",
-  });
-}
-
-main().catch((error) => {
-  log(`Fatal error: ${error}`);
-  process.exit(1);
-});
+};
