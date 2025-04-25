@@ -4,13 +4,24 @@ dotenv.config();
 import { Client, type XmtpEnv } from "@xmtp/node-sdk";
 import { createSigner, getEncryptionKeyFromHex } from "./helpers/client.js";
 import { logAgentDetails, validateEnvironment, log } from "./helpers/utils.js";
-import { findOrCreateDogfoodingGroup } from "./dogfooding.js";
+import { findOrCreateDogfoodingGroup, DOGFOODING_ADMIN_ADDRESS } from "./dogfooding.js";
 import { listenForMessages } from "./stream.js";
+import { createLinearTicket } from "./linear.js";
 
-const { WALLET_KEY, ENCRYPTION_KEY, XMTP_ENV } = validateEnvironment([
+const {
+  WALLET_KEY,
+  ENCRYPTION_KEY,
+  XMTP_ENV,
+  LINEAR_API_KEY,
+  LINEAR_TEAM_ID,
+  LINEAR_COMMAND_TRIGGER,
+} = validateEnvironment([
   "WALLET_KEY",
   "ENCRYPTION_KEY",
   "XMTP_ENV",
+  "LINEAR_API_KEY",
+  "LINEAR_TEAM_ID",
+  "LINEAR_COMMAND_TRIGGER",
 ]);
 
 async function main() {
@@ -39,7 +50,12 @@ async function main() {
   await client.conversations.sync();
 
   log("Listening for messages...");
-  await listenForMessages(client, group);
+  await listenForMessages(client, group, {
+    adminAddress: DOGFOODING_ADMIN_ADDRESS,
+    linearApiKey: LINEAR_API_KEY,
+    linearTeamId: LINEAR_TEAM_ID,
+    linearCommand: LINEAR_COMMAND_TRIGGER ?? "/linear",
+  });
 }
 
 main().catch((error) => {

@@ -2,7 +2,7 @@ import { Client, IdentifierKind, type Group } from "@xmtp/node-sdk";
 import { log, isSameString } from "./helpers/utils.js";
 
 const GROUP_NAME = "TBA Dogfooding";
-const DOGFOODING_ADMIN_ADDRESS = "0x80245b9C0d2Ef322F2554922cA86Cf211a24047F";
+export const DOGFOODING_ADMIN_ADDRESS = "0x80245b9C0d2Ef322F2554922cA86Cf211a24047F";
 
 export async function findOrCreateDogfoodingGroup(client: Client): Promise<Group> {
   const group = await findDogfoodingGroup(client);

@@ -11,6 +11,7 @@
         "start": "tsx src/index.ts"
     },
     "dependencies": {
+        "@linear/sdk": "^39.1.1",
         "@xmtp/node-sdk": "^2.0.4",
         "dotenv": "^16.5.0",
         "ethers": "^6.13.5",
