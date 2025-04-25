@@ -20,13 +20,21 @@ interface CreateTicketParams {
   feedbackSenderAddress?: string; // Optional: To add context
 }
 
+// Define the structure of the issue object to be returned
+interface LinearIssue {
+  title: string;
+  identifier: string;
+  url: string;
+}
+
 export async function createLinearTicket({
-  apiKey,
-  teamId,
-  title,
-  description,
-  feedbackSenderAddress,
-}: CreateTicketParams): Promise<{ success: boolean; url?: string; error?: string }> {
+  apiKey, teamId, title, description, feedbackSenderAddress,
+}: CreateTicketParams): Promise<{
+  success: boolean;
+  issue?: LinearIssue; // Add the issue object here
+  url?: string; // Keep url for backward compatibility or direct access if needed
+  error?: string;
+}> {
   try {
     const client = getLinearClient(apiKey);
 
@@ -50,7 +58,16 @@ export async function createLinearTicket({
 
     if (result.success && issue) {
       log(`[SUCCESS] Created Linear ticket: ${issue.url}`);
-      return { success: true, url: issue.url };
+      // Return the issue object with its details
+      return {
+        success: true,
+        issue: {
+          title: issue.title,
+          identifier: issue.identifier,
+          url: issue.url,
+        },
+        url: issue.url, // Also keep the direct url if desired
+      };
     } else {
       log(`[ERROR] Linear API reported failure to create ticket.`);
       return { success: false, error: "Linear API reported failure." };
