@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Client, type XmtpEnv } from "@xmtp/node-sdk";
-import { createSigner, getEncryptionKeyFromHex } from "./helpers/client.js";
+import { createSigner, getEncryptionKeyFromHex, getDbPath } from "./helpers/client.js";
 import { logAgentDetails, validateEnvironment, log } from "./helpers/utils.js";
 import { findOrCreateDogfoodingGroup, DOGFOODING_ADMIN_ADDRESS } from "./dogfooding.js";
 import { listenForMessages } from "./stream.js";
@@ -24,14 +24,16 @@ const {
   "LINEAR_COMMAND_TRIGGER",
 ]);
 
-async function main() {
-  const signer = createSigner(WALLET_KEY as `0x${string}`);
-  const encryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
+const signer = createSigner(WALLET_KEY as `0x${string}`);
+const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
+const receiverClient = await Client.create(signer, {
+  dbEncryptionKey,
+  env: XMTP_ENV as XmtpEnv,
+  dbPath: getDbPath(XMTP_ENV),
+});
 
-  const client = await Client.create(signer, {
-    env: XMTP_ENV as XmtpEnv,
-    dbEncryptionKey: encryptionKey,
-  });
+async function main() {
+  const client = receiverClient;
 
   const identifier = await signer.getIdentifier();
   const address = identifier.identifier;

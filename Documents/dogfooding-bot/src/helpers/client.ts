@@ -3,6 +3,8 @@ import { fromString } from "uint8arrays";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
+import { Wallet } from "ethers";
+import fs from "fs";
 
 export const createSigner = (key: `0x${string}`): Signer => {
   const account = privateKeyToAccount(key);
@@ -23,4 +25,16 @@ export const createSigner = (key: `0x${string}`): Signer => {
 
 export const getEncryptionKeyFromHex = (hex: string) => {
   return fromString(hex, "hex");
+};
+
+export const getDbPath = (env: string, suffix: string = "xmtp") => {
+  //Checks if the environment is a Railway deployment
+  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? ".data/xmtp";
+  // Create database directory if it doesn't exist
+  if (!fs.existsSync(volumePath)) {
+    fs.mkdirSync(volumePath, { recursive: true });
+  }
+  const dbPath = `${volumePath}/${env}-${suffix}.db3`;
+
+  return dbPath;
 }; 
