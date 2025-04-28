@@ -41,6 +41,9 @@ async function main() {
 
   const group = await findOrCreateDogfoodingGroup(client);
 
+  // Add this log to check the group object
+  log(`[DEBUG] findOrCreateDogfoodingGroup returned: ${JSON.stringify(group)}`);
+
   if (!group) {
     log(`[ERROR] Failed to find or create the TBA Dogfooding group`);
     return;
