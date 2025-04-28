@@ -6,7 +6,6 @@ import { createSigner, getEncryptionKeyFromHex, getDbPath } from "./helpers/clie
 import { logAgentDetails, validateEnvironment, log } from "./helpers/utils.js";
 import { findOrCreateDogfoodingGroup, DOGFOODING_ADMIN_ADDRESS } from "./dogfooding.js";
 import { listenForMessages } from "./stream.js";
-import { createLinearTicket } from "./linear.js";
 
 const {
   WALLET_KEY,
@@ -24,16 +23,17 @@ const {
   "LINEAR_COMMAND_TRIGGER",
 ]);
 
-const signer = createSigner(WALLET_KEY as `0x${string}`);
-const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
-const receiverClient = await Client.create(signer, {
-  dbEncryptionKey,
-  env: XMTP_ENV as XmtpEnv,
-  dbPath: getDbPath(XMTP_ENV),
-});
-
 async function main() {
-  const client = receiverClient;
+  const signer = createSigner(WALLET_KEY as `0x${string}`);
+  const encryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
+  const dbPath = getDbPath(XMTP_ENV);
+  log(`[INFO] Using database path: ${dbPath}`);
+
+  const client = await Client.create(signer, {
+    env: XMTP_ENV as XmtpEnv,
+    dbEncryptionKey: encryptionKey,
+    dbPath: dbPath,
+  });
 
   const identifier = await signer.getIdentifier();
   const address = identifier.identifier;

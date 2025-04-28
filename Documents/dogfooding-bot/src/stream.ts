@@ -77,9 +77,7 @@ export async function listenForMessages(
             );
           } else {
             await conversation.send(
-              `❌ Failed to create ticket. Error: ${
-                issueResult?.error ?? "Unknown error"
-              }`,
+              `❌ Failed to create ticket due to a problem connecting to Linear. Try again later.`,
             );
           }
         } catch (linearError: any) {

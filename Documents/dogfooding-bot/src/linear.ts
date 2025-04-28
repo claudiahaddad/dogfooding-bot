@@ -38,17 +38,13 @@ export async function createLinearTicket({
   try {
     const client = getLinearClient(apiKey);
 
-    let fullDescription = description;
-    if (feedbackSenderAddress) {
-      fullDescription += `\n\n---\n*Feedback submitted via XMTP by: ${feedbackSenderAddress}*`;
-    }
-
-    log(`[INFO] Creating Linear ticket in team ${teamId} with title: ${title}`);
+log(`[INFO] Creating Linear ticket in team ${teamId} with title: ${title}`);
+    const startTime = Date.now(); // Record start time
 
     const result = await client.createIssue({
       teamId: teamId,
       title: title,
-      description: fullDescription,
+      description: description,
       // You can add more fields like priority, labels, assigneeId etc. here
       // priority: 0, // Example: No priority
       // labelIds: ["some-label-uuid"], // Example
