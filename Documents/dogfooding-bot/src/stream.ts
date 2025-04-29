@@ -107,7 +107,7 @@ export async function listenForMessages(
               try {
                 log(`Sending welcome message to group ${dogfoodingGroup.id} for new member ${senderInboxId}`);
                 await dogfoodingGroup.send(
-                  `Welcome to the TBA Dogfooders Group, ${senderAddress}. Send feedback using the /linear command and I'll make a ticket.`
+                  `Welcome to the TBA Dogfooders Group! Send feedback using the /linear command and I'll make a ticket.`
                 );
                 log(`Sent welcome message to group ${dogfoodingGroup.id}`);
               } catch (groupSendError: any) {
