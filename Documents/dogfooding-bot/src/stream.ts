@@ -19,7 +19,6 @@ export async function listenForMessages(
   log(`[INFO] Streaming messages in group ${dogfoodingGroup.id}`);
   log(`[INFO] Listening for Linear command: "${linearCommand}" for team ID: ${linearTeamId}`);
 
-  while (true) {
     log('[INFO] Attempting to start message stream...');
     try {
       const stream = await client.conversations.streamAllMessages();
@@ -161,7 +160,6 @@ export async function listenForMessages(
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
-}
 
 function shouldSkip(
   message: DecodedMessage<any> | undefined,
