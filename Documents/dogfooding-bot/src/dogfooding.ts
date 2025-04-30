@@ -1,7 +1,7 @@
 import { Client, IdentifierKind, type Group } from "@xmtp/node-sdk";
 import { log, isSameString } from "./helpers/utils.js";
 
-const GROUP_NAME = "TBA Dogfooders";
+const GROUP_NAME = "Dogfooding Group ⭐";
 export const DOGFOODING_ADMIN_ADDRESS = "0x80245b9C0d2Ef322F2554922cA86Cf211a24047F";
 
 export async function findOrCreateDogfoodingGroup(client: Client): Promise<Group> {
@@ -81,7 +81,7 @@ const addAdminToGroup = async (client: Client, group: Group) => {
 
   if (memberInboxId) {
     try {
-      await group.addAdmin(memberInboxId);
+      await group.addSuperAdmin(memberInboxId);
       log(`[SUCCESS] Added ${DOGFOODING_ADMIN_ADDRESS} (InboxID: ${memberInboxId}) as admin to group ${group.id}`);
 
       // --- Remove DM Confirmation Block ---
