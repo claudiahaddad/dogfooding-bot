@@ -104,16 +104,6 @@ export async function listenForMessages(
               log(`Added ${senderInboxId} to Dogfooding group`);
 
               try {
-                log(`Sending welcome message to group ${dogfoodingGroup.id} for new member ${senderInboxId}`);
-                await dogfoodingGroup.send(
-                  `Welcome to the TBA Dogfooders Group! Send feedback here and react to others' feedback. Click group details to find people to follow too!`
-                );
-                log(`Sent welcome message to group ${dogfoodingGroup.id}`);
-              } catch (groupSendError: any) {
-                 log(`[ERROR] Failed to send welcome message to group ${dogfoodingGroup.id}: ${groupSendError.message}`);
-              }
-
-              try {
                 log(`Sending DM confirmation to new member ${senderInboxId}`);
                 await conversation.send(
                   "I've added you to the TBA Dogfooders group! You can find it in your message requests."
