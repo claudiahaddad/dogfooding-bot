@@ -5,21 +5,32 @@ const GROUP_NAME = "TBA Dogfooders ⭐";
 export const DOGFOODING_ADMIN_ADDRESS = "0x80245b9C0d2Ef322F2554922cA86Cf211a24047F";
 
 export async function findOrCreateDogfoodingGroup(client: Client): Promise<Group> {
-  const group = await findDogfoodingGroup(client);
-  if (group) {
-    log(`[INFO] Found existing ${GROUP_NAME} group`);
-    return group;
+  log("[INFO] Looking for existing TBA Dogfooders ⭐ group...");
+  
+  try {
+    // First try to find existing group
+    const groups = await client.conversations.listGroups();
+    const existingGroup = groups.find(
+      (group) => group.name === "TBA Dogfooders ⭐"
+    );
+
+    if (existingGroup) {
+      log(`[INFO] Found existing TBA Dogfooders ⭐ group: ${existingGroup.id}`);
+      return existingGroup;
+    }
+
+    // If no existing group, create new one
+    log("[INFO] Creating new TBA Dogfooders ⭐ group...");
+    const newGroup = await client.conversations.newGroup([], {
+     groupName: "TBA Dogfooders ⭐",
+    });
+
+    log(`[INFO] Created new TBA Dogfooders ⭐ group: ${newGroup.id}`);
+    return newGroup;
+  } catch (error) {
+    log(`[ERROR] Error in findOrCreateDogfoodingGroup: ${error}`);
+    throw error;
   }
-
-  log(`[INFO] Creating new ${GROUP_NAME} group...`);
-
-  const newGroup = await client.conversations.newGroup([], {
-    groupName: GROUP_NAME,
-    groupDescription: `The ${GROUP_NAME} community group`,
-  });
-
-  await addAdminToGroup(client, newGroup);
-  return newGroup;
 }
 
 const findDogfoodingGroup = async (client: Client): Promise<Group | undefined> => {
