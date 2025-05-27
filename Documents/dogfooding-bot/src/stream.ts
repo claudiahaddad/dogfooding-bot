@@ -103,14 +103,13 @@ export async function listenForMessages(
               await dogfoodingGroup.addMembers([senderInboxId]);
               log(`Added ${senderInboxId} to Dogfooding group`);
 
+              // Send DM confirmation only
               try {
-                log(`Sending DM confirmation to new member ${senderInboxId}`);
                 await conversation.send(
-                  "I've added you to the TBA Dogfooders group! You can find it in your message requests."
+                  "I've added you to the TBA Dogfooders ⭐ group! You can find it in your message requests."
                 );
-                log(`Sent DM confirmation to ${senderInboxId}`);
               } catch (dmSendError: any) {
-                 log(`[ERROR] Failed to send DM confirmation to ${senderInboxId}: ${dmSendError.message}`);
+                log(`[ERROR] Failed to send DM confirmation: ${dmSendError.message}`);
               }
 
             } else {

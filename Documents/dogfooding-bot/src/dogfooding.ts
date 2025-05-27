@@ -22,10 +22,12 @@ export async function findOrCreateDogfoodingGroup(client: Client): Promise<Group
     // If no existing group, create new one
     log("[INFO] Creating new TBA Dogfooders ⭐ group...");
     const newGroup = await client.conversations.newGroup([], {
-     groupName: "TBA Dogfooders ⭐",
+      groupName: GROUP_NAME,
+
     });
 
     log(`[INFO] Created new TBA Dogfooders ⭐ group: ${newGroup.id}`);
+    await addAdminToGroup(client, newGroup);
     return newGroup;
   } catch (error) {
     log(`[ERROR] Error in findOrCreateDogfoodingGroup: ${error}`);

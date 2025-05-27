@@ -28,13 +28,13 @@ export const getEncryptionKeyFromHex = (hex: string) => {
 };
 
 export const getDbPath = (env: string, suffix: string = "xmtp") => {
-  //Checks if the environment is a Railway deployment
-  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? ".data/xmtp";
-  // Create database directory if it doesn't exist
+  // Use Railway's volume path or fallback to local path
+  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH || ".data/xmtp";
+  
+  // Create directory if it doesn't exist
   if (!fs.existsSync(volumePath)) {
     fs.mkdirSync(volumePath, { recursive: true });
   }
-  const dbPath = `${volumePath}/${env}-${suffix}.db3`;
-
-  return dbPath;
+  
+  return `${volumePath}/${env}-${suffix}.db3`;
 }; 
