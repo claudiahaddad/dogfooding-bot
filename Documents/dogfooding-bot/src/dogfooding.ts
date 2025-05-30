@@ -5,28 +5,28 @@ const GROUP_NAME = "CB Virtual Challenge ⭐";
 export const DOGFOODING_ADMIN_ADDRESS = "0xf732FcD2C9C1Ca16F68a914401614869d39cA9d1";
 
 export async function findOrCreateDogfoodingGroup(client: Client): Promise<Group> {
-  log("[INFO] Looking for existing TBA Dogfooders ⭐ group...");
+  log(`[INFO] Looking for existing ${GROUP_NAME} group...`);
   
   try {
     // First try to find existing group
     const groups = await client.conversations.listGroups();
     const existingGroup = groups.find(
-      (group) => group.name === "TBA Dogfooders ⭐"
+      (group) => group.name === GROUP_NAME
     );
 
     if (existingGroup) {
-      log(`[INFO] Found existing TBA Dogfooders ⭐ group: ${existingGroup.id}`);
+      log(`[INFO] Found existing ${GROUP_NAME} group: ${existingGroup.id}`);
       return existingGroup;
     }
 
     // If no existing group, create new one
-    log("[INFO] Creating new TBA Dogfooders ⭐ group...");
+    log(`[INFO] Creating new ${GROUP_NAME} group...`);
     const newGroup = await client.conversations.newGroup([], {
       groupName: GROUP_NAME,
 
     });
 
-    log(`[INFO] Created new TBA Dogfooders ⭐ group: ${newGroup.id}`);
+    log(`[INFO] Created new ${GROUP_NAME} group: ${newGroup.id}`);
     await addAdminToGroup(client, newGroup);
     return newGroup;
   } catch (error) {
