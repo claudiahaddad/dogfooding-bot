@@ -106,7 +106,7 @@ export async function listenForMessages(
               // Send DM confirmation only
               try {
                 await conversation.send(
-                  "I've added you to the TBA Dogfooders ⭐ group! You can find it in your message requests."
+                  "I've added you to the CB Virtual Challenge ⭐ group chat! You can find it in your message requests."
                 );
               } catch (dmSendError: any) {
                 log(`[ERROR] Failed to send DM confirmation: ${dmSendError.message}`);
@@ -114,7 +114,7 @@ export async function listenForMessages(
 
             } else {
               log(`User ${senderInboxId} (DM) is already a member of the Dogfooding group`);
-              await conversation.send(`You're already a member of the Dogfooding group!`);
+              await conversation.send(`You've already been added to the CB Virtual Challenge group chat!`);
             }
           } else {
             log(`[DEBUG] Ignoring non-command message ${message?.id} in group conversation ${conversation.id}`);
