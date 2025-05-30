@@ -2,7 +2,7 @@ import { Client, IdentifierKind, type Group } from "@xmtp/node-sdk";
 import { log, isSameString } from "./helpers/utils.js";
 
 const GROUP_NAME = "CB Virtual Challenge ⭐";
-export const DOGFOODING_ADMIN_ADDRESS = "0x80245b9C0d2Ef322F2554922cA86Cf211a24047F";
+export const DOGFOODING_ADMIN_ADDRESS = "0xf732FcD2C9C1Ca16F68a914401614869d39cA9d1";
 
 export async function findOrCreateDogfoodingGroup(client: Client): Promise<Group> {
   log("[INFO] Looking for existing TBA Dogfooders ⭐ group...");
