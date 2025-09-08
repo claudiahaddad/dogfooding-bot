@@ -2,7 +2,6 @@ import { Group } from "@xmtp/node-sdk";
 import { isSameString, log } from "./helpers/utils.js";
 import { checkTokenBalance, getTokenSymbol } from "./helpers/tokenGating.js";
 import { loadTokenGatingConfig } from "./helpers/config.js";
-import { cacheMemberAddress } from "./helpers/memberCache.js";
 // --- Retry Logic Constants and Helper ---
 const MAX_RETRIES = 6; // Max number of retry attempts
 const RETRY_DELAY_MS = 10000; // Delay between retries in milliseconds (10 seconds)
@@ -43,13 +42,11 @@ export async function listenForMessages(client, tokenGatedGroup) {
                     continue;
                 }
                 log(`[DEBUG] Message received from: ${message?.senderInboxId}`);
-                log(`[DEBUG] Sender address: ${message?.senderAddress}`);
                 log(`[DEBUG] Client inbox ID: ${client.inboxId}`);
                 log(`[DEBUG] Message content type: ${message?.contentType?.typeId}`);
                 // Inner try...catch for processing individual messages
                 try {
                     const senderInboxId = message?.senderInboxId ?? "";
-                    const senderAddress = message?.senderAddress; // Direct address from XMTP message
                     const conversationId = message?.conversationId;
                     if (!conversationId) {
                         log(`[WARN] Skipping message ${message?.id}: Missing conversationId.`);
@@ -68,39 +65,51 @@ export async function listenForMessages(client, tokenGatedGroup) {
                     }
                     // --- Proceed only if it's confirmed to be a DM ---
                     log(`[DEBUG] Message ${message?.id} is a DM from existing conversation.`);
-                    // Since new conversations are handled automatically, this is likely a follow-up message
-                    // Check if sender is in the group and provide helpful response
+                    // Get message content - ensure it's a string
+                    const messageContent = typeof message?.content === 'string' ? message.content.trim().toLowerCase() : '';
+                    log(`[DEBUG] Message content: "${messageContent}"`);
+                    // Check if sender is in the group first
                     const members = await tokenGatedGroup.members();
                     const isMember = members.some((member) => isSameString(member.inboxId, senderInboxId));
                     if (isMember) {
                         log(`[MESSAGE] User ${senderInboxId} is already a member of the group`);
-                        await conversation.send(`You're already a member of @claudia's group chat ✨! Check your message requests if you can't find the group.`);
+                        await conversation.send(`You're already a member of Claudia's chat ✨! Check your message requests if you can't find the group.`);
                     }
-                    else {
-                        log(`[MESSAGE] User ${senderInboxId} sent a message but isn't in group. May need manual verification.`);
-                        // Try to get their address and check eligibility again
+                    else if (messageContent === "gm") {
+                        log(`[MESSAGE] User ${senderInboxId} said 'gm' - checking token eligibility...`);
+                        // Get sender address using XMTP SDK method
+                        const inboxState = await client.preferences.inboxStateFromInboxIds([
+                            message.senderInboxId,
+                        ]);
+                        const senderAddress = inboxState[0]?.identifiers[0]?.identifier;
+                        log(`[ADDRESS] Sender address from inbox state: ${senderAddress}`);
                         if (senderAddress) {
-                            log(`[MESSAGE] Re-checking token balance for ${senderAddress}`);
+                            log(`[MESSAGE] Checking token balance for ${senderAddress}`);
                             const hasRequiredTokens = await checkTokenBalance(senderAddress, tokenConfig);
                             if (hasRequiredTokens) {
-                                log(`[MESSAGE] User ${senderInboxId} now has required tokens. Adding to group...`);
+                                log(`[MESSAGE] User ${senderInboxId} has required tokens. Adding to group...`);
                                 try {
                                     await tokenGatedGroup.addMembers([senderInboxId]);
-                                    cacheMemberAddress(senderInboxId, senderAddress);
-                                    await conversation.send(`🎉 Great! I've verified you now hold at least ${tokenConfig.minimumBalance} ${tokenSymbol} tokens and added you to @claudia's group chat ✨!`);
+                                    await conversation.send(`🎉 GM! I've verified you hold at least ${tokenConfig.minimumBalance} ${tokenSymbol} tokens and added you to Claudia's chat ✨! Check your message requests to view the group.`);
                                 }
                                 catch (error) {
                                     log(`[MESSAGE] Error adding user to group: ${error}`);
-                                    await conversation.send(`There was an issue adding you to the group. Please try starting a new conversation with me.`);
+                                    await conversation.send(`I verified you have the required tokens, but there was an issue adding you to the group. Please try saying 'gm' again.`);
                                 }
                             }
                             else {
-                                await conversation.send(`You still need to hold at least ${tokenConfig.minimumBalance} ${tokenSymbol} tokens to join @claudia's group chat ✨. Once you acquire them, start a fresh conversation with me!`);
+                                await conversation.send(`❌ GM! Unfortunately, you need to hold at least ${tokenConfig.minimumBalance} ${tokenSymbol} tokens to join Claudia's chat ✨. Once you acquire the required tokens, say 'gm' again to join!`);
                             }
                         }
                         else {
-                            await conversation.send(`I couldn't verify your wallet address from this message. Please start a new conversation with me so I can automatically check your token balance!`);
+                            log(`[ADDRESS] No address available from inbox state for ${senderInboxId}`);
+                            await conversation.send(`GM! I couldn't detect your wallet address from your inbox ID. Please try again or contact support if the issue persists.`);
                         }
+                    }
+                    else {
+                        // Not a "gm" message - provide guidance
+                        log(`[MESSAGE] User ${senderInboxId} sent non-gm message: "${messageContent}"`);
+                        await conversation.send(`💬 To join Claudia's chat, simply say "gm" and I'll check if you hold the required tokens!`);
                     }
                 }
                 catch (processingError) {
@@ -177,55 +186,12 @@ async function handleNewConversation(client, conversation, tokenGatedGroup, toke
         const isAlreadyMember = members.some((member) => isSameString(member.inboxId, peerInboxId));
         if (isAlreadyMember) {
             log(`[NEW-CONVERSATION] User ${peerInboxId} is already in the group`);
-            await conversation.send(`Welcome back! You're already a member of @claudia's group chat ✨`);
+            await conversation.send(`Welcome back! You're already a member of Claudia's chat ✨`);
             return;
         }
-        // Get the peer's address - try multiple methods
-        let peerAddress = null;
-        // Method 1: Check if conversation has peerAddress
-        if (conversation.peerAddress) {
-            peerAddress = conversation.peerAddress;
-            log(`[NEW-CONVERSATION] Got peer address from conversation: ${peerAddress}`);
-        }
-        // Method 2: Try to create a new DM and get address from there
-        if (!peerAddress) {
-            try {
-                const dmConversation = await client.conversations.newDm(peerInboxId);
-                if (dmConversation.peerAddress) {
-                    peerAddress = dmConversation.peerAddress;
-                    log(`[NEW-CONVERSATION] Got peer address from newDm: ${peerAddress}`);
-                }
-            }
-            catch (error) {
-                log(`[NEW-CONVERSATION] Could not create DM to get address: ${error}`);
-            }
-        }
-        if (!peerAddress) {
-            log(`[NEW-CONVERSATION] Could not determine peer address for ${peerInboxId}`);
-            await conversation.send(`Hi! I couldn't automatically verify your wallet address. Please send me your wallet address like: "My wallet: 0x1234..." and I'll check if you qualify for @claudia's group chat ✨`);
-            return;
-        }
-        log(`[NEW-CONVERSATION] Checking token balance for ${peerAddress}`);
-        // Check token balance
-        const hasRequiredTokens = await checkTokenBalance(peerAddress, tokenConfig);
-        if (hasRequiredTokens) {
-            log(`[NEW-CONVERSATION] User ${peerInboxId} (${peerAddress}) has required tokens. Adding to group...`);
-            try {
-                await tokenGatedGroup.addMembers([peerInboxId]);
-                // Cache the address for future member scans
-                cacheMemberAddress(peerInboxId, peerAddress);
-                await conversation.send(`🎉 Welcome! I've verified you hold at least ${tokenConfig.minimumBalance} ${tokenSymbol} tokens and automatically added you to @claudia's group chat ✨. Check your message requests to view the group!`);
-                log(`[NEW-CONVERSATION] Successfully added ${peerInboxId} to token-gated group`);
-            }
-            catch (addError) {
-                log(`[NEW-CONVERSATION] Error adding user to group: ${addError}`);
-                await conversation.send(`I verified you have the required tokens, but there was an issue adding you to the group. Please try messaging me again.`);
-            }
-        }
-        else {
-            log(`[NEW-CONVERSATION] User ${peerInboxId} (${peerAddress}) doesn't have required tokens`);
-            await conversation.send(`❌ Sorry, you need to hold at least ${tokenConfig.minimumBalance} ${tokenSymbol} tokens to join @claudia's group chat ✨. Once you acquire the required tokens, start a conversation with me again to join!`);
-        }
+        // Send welcome message asking them to say "gm" to request access
+        await conversation.send(`👋 Hey there! Welcome to my token-gated bot.\n\nTo join Claudia's chat, you need to hold at least ${tokenConfig.minimumBalance} ${tokenSymbol} tokens.\n\n💬 Say "gm" and I'll automatically check your wallet and add you to the group if you qualify!`);
+        log(`[NEW-CONVERSATION] Sent welcome message to ${peerInboxId}, waiting for 'gm'`);
     }
     catch (error) {
         log(`[NEW-CONVERSATION] Error handling new conversation: ${error}`);

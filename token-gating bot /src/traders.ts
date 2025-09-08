@@ -1,7 +1,7 @@
 import { Client, Group } from "@xmtp/node-sdk";
 import { log, isSameString } from "./helpers/utils.js";
 
-const GROUP_NAME = "@claudia's group chat ✨";
+const GROUP_NAME = "@claudia's chat ✨";
 const TRADERS_ADMIN_INBOX_ID = "e09350ad5bab8a6b24e38f86500c67e0fb294e25cf527b0cd4f1cd32dede16e7";
 
 export async function findOrCreateTokenGatedGroup(client: Client): Promise<Group<any>> {
